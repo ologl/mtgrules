@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Comprehensive Rules of Magic: The Gathering — Searchable</title>
+<title>Magic: The Gathering Rules Browser</title>
 <meta name="description" content="Searchable, cross-linked browser for the Magic: The Gathering Comprehensive Rules. Unofficial fan project.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -60,7 +60,8 @@ button{font:500 13px Inter,system-ui,sans-serif;color:var(--ink-2);background:va
 button:hover{color:var(--ink);border-color:var(--ink-3)}
 
 /* source notes */
-details.notes{margin:16px 0 4px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.notesview{margin-top:4px}
+.notesview .intro{color:var(--ink-2);font-size:14px;margin:0 0 6px}
 details.notes>summary{cursor:pointer;padding:11px 14px;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 details.notes>summary::-webkit-details-marker{display:none}
 details.notes>summary .sub{font-weight:400;color:var(--ink-3);font-size:13px}
@@ -119,6 +120,9 @@ mark{background:var(--hit);color:inherit;border-radius:2px;padding:0 1px}
 .res .rn{font:500 13.5px "IBM Plex Mono",monospace;color:var(--accent)}
 .res .crumb{font-size:12.5px;color:var(--ink-3)}
 .res .sn{font:15.5px/1.55 "Source Serif 4",Georgia,serif;margin-top:2px}
+.glline{font-size:14px;color:var(--ink-3);margin:12px 12px 0}
+.glline a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
+.glline .obs{font:500 10px/1 "IBM Plex Mono",monospace;text-transform:uppercase;padding:3px 5px;border-radius:4px;background:var(--surface-2);color:var(--ink-3)}
 .gcard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:6px 0}
 .gcard .gt{font-weight:600}
 .gcard .gt .lab{font:500 10px/1 "IBM Plex Mono",monospace;text-transform:uppercase;padding:4px 6px;border-radius:5px;background:var(--surface-2);color:var(--ink-3);margin-right:6px;vertical-align:2px}
@@ -165,7 +169,7 @@ footer{margin-top:40px;font-size:12.5px;color:var(--ink-3)}
 <body>
 <div class="layout">
   <header class="top">
-    <h1>The Comprehensive Rules of Magic: The Gathering <span class="badge">searchable</span></h1>
+    <h1>Magic: The Gathering Rules Browser</h1>
     <p id="sub"></p>
   </header>
   <nav class="side" id="nav" aria-label="Sections"></nav>
@@ -174,11 +178,11 @@ footer{margin-top:40px;font-size:12.5px;color:var(--ink-3)}
       <input id="q" type="search" placeholder="Search words, slang or a rule number (e.g. 702.19b)" autocomplete="off" aria-label="Search the rules">
       <div class="meta" id="meta"></div>
     </div>
-    <details class="notes" id="notes"></details>
     <div id="backbar" class="backbar hidden"></div>
     <section id="v-results" class="hidden" aria-live="polite"></section>
     <section id="v-section"></section>
     <section id="v-glossary" class="hidden"></section>
+    <section id="v-notes" class="hidden notesview"></section>
     <footer id="foot"></footer>
   </main>
 </div>
@@ -270,11 +274,12 @@ function showView(v){
   $("v-section").classList.toggle("hidden", v !== "section");
   $("v-glossary").classList.toggle("hidden", v !== "glossary");
   $("v-results").classList.toggle("hidden", v !== "results");
+  $("v-notes").classList.toggle("hidden", v !== "notes");
   const q = $("q").value.trim();
   $("backbar").classList.toggle("hidden", !(q && v !== "results"));
   if (q && v !== "results") $("backbar").innerHTML = `<a id="backlink">← Back to results for “${esc(q)}”</a>`;
   document.querySelectorAll("#nav a").forEach(a => a.classList.toggle("on",
-    (v === "glossary" && a.dataset.k === "g") || (v === "section" && a.dataset.k === curSection)));
+    (v === "glossary" && a.dataset.k === "g") || (v === "notes" && a.dataset.k === "n") || (v === "section" && a.dataset.k === curSection)));
 }
 function showSection(s){
   if (curSection !== s){
@@ -337,7 +342,7 @@ function route(){
   const hl = pendingHighlight; pendingHighlight = null;
   if (!h){ showSection("1"); return; }
   if (/^s[1-9]$/.test(h)){ showSection(h[1]); window.scrollTo({top:0}); return; }
-  if (h === "notes"){ $("notes").open = true; $("notes").scrollIntoView(); return; }
+  if (h === "notes"){ showView("notes"); window.scrollTo({top:0}); return; }
   if (h === "glossary" || h.startsWith("glossary/")){
     showGlossary();
     const key = h.slice(9);
@@ -501,10 +506,10 @@ function runSearch(){
   if (!res){ idleMeta(); return; }
   lastRes = res; shown = 0;
   let html = "";
-  if (res.gl.length) html += `<div class="rgroup">Glossary</div>` + res.gl.map(g => {
-    const ds = GLOSS[g.t]; const obs = /\(Obsolete\)/.test(g.t);
-    return `<div class="gcard"><div class="gt"><span class="lab">${obs?"obsolete term":"glossary"}</span>${esc(g.t.replace(/\s*\(Obsolete\)/,""))}</div><div class="gd">${ds.map(d=>renderPara(d)).join(" ")}</div></div>`;
-  }).join("");
+  if (res.gl.length) html += `<div class="glline">Glossary: ` + res.gl.map(g => {
+    const obs = /\(Obsolete\)/.test(g.t);
+    return `<a class="gl" href="#glossary/${esc(g.t)}" data-g="${esc(g.t)}">${esc(g.t.replace(/\s*\(Obsolete\)/,""))}</a>${obs?' <span class="obs">obsolete</span>':""}`;
+  }).join(" · ") + `</div>`;
   html += `<div class="rgroup">${res.full.length} rule${res.full.length===1?"":"s"} matching every word</div><div id="fullres"></div>`;
   if (!res.full.length) html += `<div class="none">No rule contains all of those words.</div>`;
   if (res.partial.length) html += `<div class="rgroup">Close matches (all but one word)</div>` + res.partial.map(([n]) => resHTML(n, res.qstems)).join("");
@@ -595,17 +600,15 @@ window.addEventListener("scroll", hidePop, {passive:true});
 function toast(msg){ const t = $("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("on"), 1600); }
 
 /* ================= static parts ================= */
-$("sub").textContent = `Every rule and glossary entry, searchable and cross-linked. Rules effective ${D.effective}. Unofficial fan project.`;
+$("sub").textContent = `The Comprehensive Rules, every rule and glossary entry, searchable and cross-linked. Rules effective ${D.effective}. Unofficial fan project.`;
 $("nav").innerHTML = D.sections.map(([s,t]) => `<a href="#s${s}" data-k="${s}"><span class="k">${s}</span><span class="t">${esc(t)}</span></a>`).join("") +
   `<hr><a href="#glossary" data-k="g"><span class="k">A–Z</span><span class="t">Glossary</span></a><a href="#notes" data-k="n"><span class="k">!</span><span class="t">Source notes</span></a>`;
 const issueHTML = ([where, detail, handling, link], kind) => `<div class="issue"><span class="tag ${kind}">${kind==="err"?"error":"quirk"}</span>
   <div class="where">${link ? `<a href="#${esc(link)}">${esc(where)}</a>` : esc(where)}</div><div class="detail">${esc(detail)}</div><div class="handle"><b>Handled:</b> ${esc(handling)}</div></div>`;
-$("notes").innerHTML = `<summary><span>Source notes</span><span class="sub">${D.errors.length} errors · ${D.quirks.length} formatting quirks found in the official text</span></summary>
-  <div class="notes-body"><h3>Errors in the rules text</h3>${D.errors.map(e=>issueHTML(e,"err")).join("")}
+$("v-notes").innerHTML = `<div class="sechead"><h2>Source notes</h2><span class="count">${D.errors.length} errors · ${D.quirks.length} formatting quirks</span></div>
+  <p class="intro">Problems found in the official rules text while building this site, and how the site handles each one.</p>
+  <div class="notes-body" style="padding:0"><h3>Errors in the rules text</h3>${D.errors.map(e=>issueHTML(e,"err")).join("")}
   <h3>Formatting quirks</h3>${D.quirks.map(e=>issueHTML(e,"quirk")).join("")}</div>`;
-let notesOpen = true; try { notesOpen = localStorage.getItem("notesClosed") !== "1"; } catch(_) {}
-$("notes").open = notesOpen;
-$("notes").addEventListener("toggle", () => { try { localStorage.setItem("notesClosed", $("notes").open ? "0" : "1"); } catch(_) {} });
 $("foot").innerHTML = `Rules text from the Magic: The Gathering Comprehensive Rules, effective ${esc(D.effective)}. Magic: The Gathering is © Wizards of the Coast. Unofficial fan project, not approved or endorsed by Wizards; the official rules are at <a href="https://magic.wizards.com/en/rules">magic.wizards.com/en/rules</a>.`;
 idleMeta();
 route();
