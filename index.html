@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MTG Rules Browser</title>
+<title>The Comprehensive Rules of Magic: The Gathering — Searchable</title>
 <meta name="description" content="Searchable, cross-linked browser for the Magic: The Gathering Comprehensive Rules. Unofficial fan project.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -32,6 +32,7 @@ body{background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,-apple
 .layout{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:230px minmax(0,1fr);gap:0 36px;padding:0 20px}
 header.top{grid-column:1/-1;padding:26px 0 6px}
 header.top h1{font:600 26px/1.2 "Source Serif 4",Georgia,serif;margin:0 0 4px;letter-spacing:-.01em}
+header.top .badge{display:inline-block;font:500 12px/1 "IBM Plex Mono",monospace;padding:5px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);vertical-align:5px;margin-left:4px;letter-spacing:0}
 header.top p{margin:0;color:var(--ink-2);font-size:14px}
 
 /* nav */
@@ -164,7 +165,7 @@ footer{margin-top:40px;font-size:12.5px;color:var(--ink-3)}
 <body>
 <div class="layout">
   <header class="top">
-    <h1>Comprehensive Rules</h1>
+    <h1>The Comprehensive Rules of Magic: The Gathering <span class="badge">searchable</span></h1>
     <p id="sub"></p>
   </header>
   <nav class="side" id="nav" aria-label="Sections"></nav>
@@ -594,7 +595,7 @@ window.addEventListener("scroll", hidePop, {passive:true});
 function toast(msg){ const t = $("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("on"), 1600); }
 
 /* ================= static parts ================= */
-$("sub").textContent = `Searchable, cross-linked Comprehensive Rules, effective ${D.effective}. Unofficial fan project.`;
+$("sub").textContent = `Every rule and glossary entry, searchable and cross-linked. Rules effective ${D.effective}. Unofficial fan project.`;
 $("nav").innerHTML = D.sections.map(([s,t]) => `<a href="#s${s}" data-k="${s}"><span class="k">${s}</span><span class="t">${esc(t)}</span></a>`).join("") +
   `<hr><a href="#glossary" data-k="g"><span class="k">A–Z</span><span class="t">Glossary</span></a><a href="#notes" data-k="n"><span class="k">!</span><span class="t">Source notes</span></a>`;
 const issueHTML = ([where, detail, handling, link], kind) => `<div class="issue"><span class="tag ${kind}">${kind==="err"?"error":"quirk"}</span>
